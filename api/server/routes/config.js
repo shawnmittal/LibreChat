@@ -112,6 +112,14 @@ router.get('/', async function (req, res) {
       conversationImportMaxFileSize: process.env.CONVERSATION_IMPORT_MAX_FILE_SIZE_BYTES
         ? parseInt(process.env.CONVERSATION_IMPORT_MAX_FILE_SIZE_BYTES, 10)
         : 0,
+      securityBanner: process.env.SECURITY_BANNER_ENABLED === 'true'
+        ? {
+            enabled: true,
+            text: process.env.SECURITY_BANNER_TEXT || 'APPROVED FOR UNCLASSIFIED INFORMATION - NO CUI/PII/PHI',
+            backgroundColor: process.env.SECURITY_BANNER_BG_COLOR || '#007a33',
+            textColor: process.env.SECURITY_BANNER_TEXT_COLOR || '#ffffff',
+          }
+        : undefined,
     };
 
     const minPasswordLength = parseInt(process.env.MIN_PASSWORD_LENGTH, 10);

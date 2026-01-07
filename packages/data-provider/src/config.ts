@@ -701,6 +701,12 @@ export type TStartupConfig = {
   >;
   mcpPlaceholder?: string;
   conversationImportMaxFileSize?: number;
+  securityBanner?: {
+    enabled: boolean;
+    text: string;
+    backgroundColor: string;
+    textColor: string;
+  };
 };
 
 export enum OCRStrategy {
