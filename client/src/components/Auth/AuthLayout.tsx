@@ -4,7 +4,7 @@ import { ErrorMessage } from '~/components/Auth/ErrorMessage';
 import { TranslationKeys, useLocalize } from '~/hooks';
 import SocialLoginRender from './SocialLoginRender';
 import { BlinkAnimation } from './BlinkAnimation';
-import { Banner } from '../Banners';
+import { Banner, SecurityBanner } from '../Banners';
 import Footer from './Footer';
 
 function AuthLayout({
@@ -58,6 +58,7 @@ function AuthLayout({
 
   return (
     <div className="relative flex min-h-screen flex-col bg-white dark:bg-gray-900">
+      <SecurityBanner />
       <Banner />
       <BlinkAnimation active={isFetching}>
         <div className="mt-6 h-10 w-full bg-cover">
