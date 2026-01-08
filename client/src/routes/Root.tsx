@@ -60,6 +60,8 @@ export default function Root() {
     logout('/login?redirect=false');
   };
 
+  const securityBannerEnabled = config?.securityBanner?.enabled;
+
   if (!isAuthenticated) {
     return null;
   }
@@ -70,9 +72,13 @@ export default function Root() {
         <AssistantsMapContext.Provider value={assistantsMap}>
           <AgentsMapContext.Provider value={agentsMap}>
             <PromptGroupsProvider>
-              <SecurityBanner />
+              <SecurityBanner position="top" />
+              <SecurityBanner position="bottom" />
               <Banner onHeightChange={setBannerHeight} />
-              <div className="flex" style={{ height: `calc(100dvh - ${bannerHeight}px)` }}>
+              <div
+                className={`flex ${securityBannerEnabled ? 'pt-7 pb-7' : ''}`}
+                style={{ height: `calc(100dvh - ${bannerHeight}px)` }}
+              >
                 <div className="relative z-0 flex h-full w-full overflow-hidden">
                   <Nav navVisible={navVisible} setNavVisible={setNavVisible} />
                   <div className="relative flex h-full max-w-full flex-1 flex-col overflow-hidden">
