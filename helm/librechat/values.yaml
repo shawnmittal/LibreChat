@@ -45,6 +45,12 @@ librechat:
     SECURITY_BANNER_TEXT: "APPROVED FOR UNCLASSIFIED INFORMATION - NO CUI/PII/PHI"
     SECURITY_BANNER_BG_COLOR: "#007a33"
     SECURITY_BANNER_TEXT_COLOR: "#ffffff"
+    # RAG Configuration - Ollama Embeddings
+    EMBEDDINGS_PROVIDER: "ollama"
+    EMBEDDINGS_MODEL: "nomic-embed-text"
+    OLLAMA_BASE_URL: "http://ollama-embedding.default.svc:11434"
+    # Set custom endpoints order (vLLM first as default)
+    ENDPOINTS: "custom,agents"
     # Set Config Params here
     # ENV_NAME: env-value
 
@@ -59,6 +65,8 @@ librechat:
     version: 1.3.1
     cache: true
     endpoints:
+      openAI:
+        disabled: true
       custom:
         - name: "vLLM"
           apiKey: "dummy"
@@ -69,6 +77,11 @@ librechat:
           titleConvo: true
           titleModel: "google/gemma-3-12b-it"
           modelDisplayLabel: "vLLM"
+          iconURL: "google"
+    interface:
+      endpointsMenu: false
+      marketplace:
+        use: false
   # configYamlContent: |
   #   version: 1.0.8
 
@@ -131,9 +144,21 @@ librechat:
 
 # only lite RAG is supported
 librechat-rag-api:
-  enabled: false
-  # can be azure, openai, huggingface or huggingfacetei
-  embeddingsProvider: openai
+  enabled: true
+  embeddingsProvider: ollama
+  postgresql:
+    enabled: false
+  nodeSelector:
+    kubernetes.io/hostname: worker-1
+  rag:
+    configEnv:
+      EMBEDDINGS_PROVIDER: "ollama"
+      EMBEDDINGS_MODEL: "nomic-embed-text"
+      OLLAMA_BASE_URL: "http://ollama-embedding.default.svc:11434"
+      DB_HOST: "librechat-postgresql"
+      DB_PORT: "5432"
+      POSTGRES_DB: "librechat-vectordb"
+      POSTGRES_USER: "postgres"
 
 
 image:
