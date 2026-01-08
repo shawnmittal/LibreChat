@@ -70,16 +70,22 @@ librechat:
       openAI:
         disabled: true
       custom:
-        - name: "vLLM"
+        - name: "vllm"
           apiKey: "dummy"
           baseURL: "http://vllm-gemma-12b.default.svc.cluster.local:8000/v1"
           models:
             default: ["google/gemma-3-12b-it"]
             fetch: true
           titleConvo: true
+          titleMethod: "completion"
           titleModel: "google/gemma-3-12b-it"
           modelDisplayLabel: "vLLM"
           iconURL: "google"
+      agents:
+        titleConvo: true
+        titleMethod: "completion"
+        titleEndpoint: "vllm"
+        titleModel: "google/gemma-3-12b-it"
     interface:
       endpointsMenu: false
       marketplace:
