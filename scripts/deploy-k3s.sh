@@ -237,6 +237,10 @@ deploy_librechat() {
         -n "$NAMESPACE"
     
     echo ""
+    echo "Restarting LibreChat deployment to pull latest image..."
+    kubectl rollout restart deployment/"$RELEASE_NAME-librechat" -n "$NAMESPACE"
+    
+    echo ""
     echo "Waiting for deployment to complete..."
     kubectl rollout status deployment/"$RELEASE_NAME-librechat" -n "$NAMESPACE" --timeout=300s
 }

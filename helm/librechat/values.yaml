@@ -53,6 +53,8 @@ librechat:
     RAG_USE_CONTEXT_MODE: "true"
     # Set custom endpoints order (vLLM first as default)
     ENDPOINTS: "custom,agents"
+    # Custom footer to hide the default "LibreChat - Every AI for Everyone" text
+    CUSTOM_FOOTER: "LibreChat - Powered by Gemini"
     # Set Config Params here
     # ENV_NAME: env-value
 
