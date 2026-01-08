@@ -1,0 +1,59 @@
+kind: ZarfPackageConfig
+metadata:
+  name: librechat
+  description: "LibreChat Airgapped Deployment"
+  version: "0.1.0"
+
+variables:
+  - name: BASE_URL
+    description: "Base OpenAI API URL"
+    default: " "
+    prompt: true
+  - name: MODEL_NAME
+    description: "Model name"
+    default: "Gemini"
+    prompt: true
+
+components:
+  - name: librechat-credentials
+    required: true
+    files:
+      - source: scripts/create-credentials-secrets.sh
+        target: create-credentials-secrets.sh
+    actions:
+      onDeploy:
+        after:
+          - cmd: |
+              chmod 700 create-credentials-secret.sh
+              bash create-credentials-secret.sh
+
+  - name: librechat-images
+    required: true
+    images:
+      - "ghcr.io/shawnmittal/librechat:security-banner"
+      - "pgvector/pgvector:pg16"
+      - "ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest"
+      - "docker.io/bitnamilegacy/mongodb:latest"
+      - "getmeili/meilisearch:v1.7.3"
+
+  - name: postgres-manual
+    required: true
+    manifests:
+      - name: postgres
+        namespace: librechat
+        files:
+          - zarf-manifests/postgres.yaml
+
+  - name: librechat-helm
+    required: true
+    charts:
+      - name: librechat
+        localPath: ./helm/librechat
+        namespace: librechat
+        version: "0.1.0" # Version isn't strictly checked for local charts in some Zarf versions, but good to have.
+        valuesFiles:
+          - ./helm/librechat/values.yaml
+        variables:
+          - name: POSTGRES_PASSWORD
+            description: "Postgres Password"
+            path: librechat-rag-api.rag.configEnv.POSTGRES_PASSWORD
