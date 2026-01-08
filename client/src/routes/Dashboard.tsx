@@ -5,26 +5,18 @@ import {
   CreatePromptForm,
   EmptyPromptPreview,
 } from '~/components/Prompts';
+import FilesListView from '~/components/Files/FilesListView';
+import VectorStoreView from '~/components/Files/VectorStoreView';
+import EmptyFilePreview from '~/components/Files/FileList/EmptyFilePreview';
+import FilePreview from '~/components/Files/FileList/FilePreview';
+import EmptyVectorStorePreview from '~/components/Files/VectorStore/EmptyVectorStorePreview';
+import VectorStorePreview from '~/components/Files/VectorStore/VectorStorePreview';
 import DashboardRoute from './Layouts/Dashboard';
 
 const dashboardRoutes = {
   path: 'd/*',
   element: <DashboardRoute />,
   children: [
-    /*
-    {
-      element: <FileDashboardView />,
-      children: [
-        {
-          index: true,
-          element: <EmptyVectorStorePreview />,
-        },
-        {
-          path: ':vectorStoreId',
-          element: <DataTableFilePreview />,
-        },
-      ],
-    },
     {
       path: 'files/*',
       element: <FilesListView />,
@@ -53,7 +45,6 @@ const dashboardRoutes = {
         },
       ],
     },
-    */
     {
       path: 'prompts/*',
       element: <PromptsView />,
