@@ -2,6 +2,7 @@ const { sleep } = require('@librechat/agents');
 const { logger } = require('@librechat/data-schemas');
 const { tool: toolFn, DynamicStructuredTool } = require('@langchain/core/tools');
 const {
+  isEnabled,
   getToolkitKey,
   hasCustomUserVars,
   getUserMCPAuthMap,
@@ -400,10 +401,16 @@ async function loadAgentTools({ req, res, agent, signal, tool_resources, openAIA
     return enabled;
   };
   const areToolsEnabled = checkCapability(AgentCapabilities.tools);
+  const useContextMode = isEnabled(process.env.RAG_USE_CONTEXT_MODE);
 
   let includesWebSearch = false;
   const _agentTools = agent.tools?.filter((tool) => {
     if (tool === Tools.file_search) {
+      // Skip file_search tool when RAG_USE_CONTEXT_MODE is enabled
+      // This allows using context-based RAG instead of tool-based RAG
+      if (useContextMode) {
+        return false;
+      }
       return checkCapability(AgentCapabilities.file_search);
     } else if (tool === Tools.execute_code) {
       return checkCapability(AgentCapabilities.execute_code);

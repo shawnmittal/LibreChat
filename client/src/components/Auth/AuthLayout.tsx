@@ -56,9 +56,12 @@ function AuthLayout({
     return null;
   };
 
+  const securityBannerEnabled = startupConfig?.securityBanner?.enabled;
+
   return (
-    <div className="relative flex min-h-screen flex-col bg-white dark:bg-gray-900">
-      <SecurityBanner />
+    <div className={`relative flex min-h-screen flex-col bg-white dark:bg-gray-900 ${securityBannerEnabled ? 'pt-7 pb-7' : ''}`}>
+      <SecurityBanner position="top" />
+      <SecurityBanner position="bottom" />
       <Banner />
       <BlinkAnimation active={isFetching}>
         <div className="mt-6 h-10 w-full bg-cover">

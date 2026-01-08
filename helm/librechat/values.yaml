@@ -49,6 +49,8 @@ librechat:
     EMBEDDINGS_PROVIDER: "ollama"
     EMBEDDINGS_MODEL: "nomic-embed-text"
     OLLAMA_BASE_URL: "http://ollama-embedding.default.svc:11434"
+    # RAG Context Mode - Use context injection instead of tool calling (for LLMs without tool support)
+    RAG_USE_CONTEXT_MODE: "true"
     # Set custom endpoints order (vLLM first as default)
     ENDPOINTS: "custom,agents"
     # Set Config Params here

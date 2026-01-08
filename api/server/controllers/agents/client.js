@@ -5,6 +5,7 @@ const { getBufferString, HumanMessage } = require('@langchain/core/messages');
 const {
   createRun,
   Tokenizer,
+  isEnabled,
   checkAccess,
   logAxiosError,
   sanitizeTitle,
@@ -327,8 +328,13 @@ class AgentClient extends BaseClient {
       this.options.attachments = files;
     }
 
-    /** Note: Bedrock uses legacy RAG API handling */
-    if (this.message_file_map && !isAgentsEndpoint(this.options.endpoint)) {
+    /** 
+     * Use context-based RAG when:
+     * 1. Bedrock endpoint (legacy RAG API handling), OR
+     * 2. RAG_USE_CONTEXT_MODE is enabled (for LLMs that don't support tool calling)
+     */
+    const useContextMode = isEnabled(process.env.RAG_USE_CONTEXT_MODE);
+    if (this.message_file_map && (!isAgentsEndpoint(this.options.endpoint) || useContextMode)) {
       this.contextHandlers = createContextHandlers(
         this.options.req,
         orderedMessages[orderedMessages.length - 1].text,
