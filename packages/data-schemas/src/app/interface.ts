@@ -53,6 +53,7 @@ export async function loadDefaultInterface({
     webSearch: interfaceConfig?.webSearch,
     fileSearch: interfaceConfig?.fileSearch,
     fileCitations: interfaceConfig?.fileCitations,
+    fileUploadDefault: interfaceConfig?.fileUploadDefault ?? defaults.fileUploadDefault,
     peoplePicker: interfaceConfig?.peoplePicker,
     marketplace: interfaceConfig?.marketplace,
   });

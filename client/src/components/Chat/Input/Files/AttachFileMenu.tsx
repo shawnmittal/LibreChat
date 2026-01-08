@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 import * as Ariakit from '@ariakit/react';
 import {
@@ -69,6 +69,7 @@ const AttachFileMenu = ({
   const { agentsConfig } = useGetAgentsConfig();
   const { data: startupConfig } = useGetStartupConfig();
   const sharePointEnabled = startupConfig?.sharePointFilePickerEnabled;
+  const fileUploadDefault = startupConfig?.interface?.fileUploadDefault;
 
   const [isSharePointDialogOpen, setIsSharePointDialogOpen] = useState(false);
 
@@ -82,6 +83,17 @@ const AttachFileMenu = ({
     agentId,
     ephemeralAgent,
   );
+
+  // Set file_search as default when fileUploadDefault is 'file_search'
+  useEffect(() => {
+    if (fileUploadDefault === 'file_search') {
+      setToolResource(EToolResources.file_search);
+      setEphemeralAgent((prev) => ({
+        ...prev,
+        [EToolResources.file_search]: true,
+      }));
+    }
+  }, [fileUploadDefault, setEphemeralAgent]);
 
   const handleUploadClick = (
     fileType?: 'image' | 'document' | 'multimodal' | 'google_multimodal',
@@ -103,6 +115,16 @@ const AttachFileMenu = ({
     }
     inputRef.current.click();
     inputRef.current.accept = '';
+  };
+
+  // Direct upload handler for file search (no menu)
+  const handleDirectFileSearchUpload = () => {
+    setToolResource(EToolResources.file_search);
+    setEphemeralAgent((prev) => ({
+      ...prev,
+      [EToolResources.file_search]: true,
+    }));
+    handleUploadClick();
   };
 
   const dropdownItems = useMemo(() => {
@@ -234,6 +256,32 @@ const AttachFileMenu = ({
       disabled={isUploadDisabled}
     />
   );
+
+  // Direct upload button for file_search mode (no dropdown menu)
+  const directUploadButton = (
+    <TooltipAnchor
+      render={
+        <button
+          type="button"
+          disabled={isUploadDisabled}
+          onClick={handleDirectFileSearchUpload}
+          id="attach-file-button"
+          aria-label="Attach Files for RAG"
+          className={cn(
+            'flex size-9 items-center justify-center rounded-full p-1 transition-colors hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50',
+          )}
+        >
+          <div className="flex w-full items-center justify-center gap-2">
+            <AttachmentIcon />
+          </div>
+        </button>
+      }
+      id="attach-file-button"
+      description={localize('com_ui_upload_file_search')}
+      disabled={isUploadDisabled}
+    />
+  );
+
   const handleSharePointFilesSelected = async (sharePointFiles: any[]) => {
     try {
       await handleSharePointFiles(sharePointFiles);
@@ -243,6 +291,9 @@ const AttachFileMenu = ({
     }
   };
 
+  // Use direct upload button when fileUploadDefault is 'file_search', otherwise show menu
+  const useDirectUpload = fileUploadDefault === 'file_search';
+
   return (
     <>
       <FileUpload
@@ -251,17 +302,21 @@ const AttachFileMenu = ({
           handleFileChange(e, toolResource);
         }}
       >
-        <DropdownPopup
-          menuId="attach-file-menu"
-          className="overflow-visible"
-          isOpen={isPopoverActive}
-          setIsOpen={setIsPopoverActive}
-          modal={true}
-          unmountOnHide={true}
-          trigger={menuTrigger}
-          items={dropdownItems}
-          iconClassName="mr-0"
-        />
+        {useDirectUpload ? (
+          directUploadButton
+        ) : (
+          <DropdownPopup
+            menuId="attach-file-menu"
+            className="overflow-visible"
+            isOpen={isPopoverActive}
+            setIsOpen={setIsPopoverActive}
+            modal={true}
+            unmountOnHide={true}
+            trigger={menuTrigger}
+            items={dropdownItems}
+            iconClassName="mr-0"
+          />
+        )}
       </FileUpload>
       <SharePointPickerDialog
         isOpen={isSharePointDialogOpen}

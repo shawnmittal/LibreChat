@@ -576,6 +576,8 @@ export const interfaceSchema = z
       .optional(),
     fileSearch: z.boolean().optional(),
     fileCitations: z.boolean().optional(),
+    /** When set to 'file_search', uploads default to file search without showing menu */
+    fileUploadDefault: z.enum(['menu', 'file_search']).optional(),
   })
   .default({
     endpointsMenu: true,
@@ -606,6 +608,7 @@ export const interfaceSchema = z
     },
     fileSearch: true,
     fileCitations: true,
+    fileUploadDefault: 'menu',
   });
 
 export type TInterfaceConfig = z.infer<typeof interfaceSchema>;

@@ -84,6 +84,8 @@ librechat:
       endpointsMenu: false
       marketplace:
         use: false
+      # Default file upload to file_search (RAG) without showing menu
+      fileUploadDefault: "file_search"
   # configYamlContent: |
   #   version: 1.0.8
 
