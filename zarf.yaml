@@ -9,10 +9,35 @@ variables:
     description: "Base OpenAI API URL"
     default: " "
     prompt: true
+  - name: OPENAI_API_KEY
+    description: "OpenAI API Key (or compatible API key)"
+    default: ""
+    prompt: true
+    sensitive: true
   - name: MODEL_NAME
     description: "Model name"
     default: "Gemini"
     prompt: true
+  
+  # Ollama Embedding Configuration
+  - name: OLLAMA_BASE_URL
+    description: "Ollama embedding service URL"
+    default: "http://ollama-embedding.default.svc:11434"
+    prompt: false
+  - name: EMBEDDINGS_MODEL
+    description: "Embeddings model name"
+    default: "nomic-embed-text"
+    prompt: false
+  
+  # RAG Chunking Configuration
+  - name: RAG_CHUNK_SIZE
+    description: "Size of text chunks in characters when splitting documents"
+    default: "1500"
+    prompt: false
+  - name: RAG_CHUNK_OVERLAP
+    description: "Overlap between chunks to preserve context"
+    default: "100"
+    prompt: false
   
   # Keycloak SSO Configuration (optional)
   - name: KEYCLOAK_ENABLED
@@ -62,6 +87,7 @@ components:
         after:
           - cmd: |
               chmod 700 create-credentials-secrets.sh
+              OPENAI_API_KEY="$ZARF_VAR_OPENAI_API_KEY" \
               KEYCLOAK_ENABLED="$ZARF_VAR_KEYCLOAK_ENABLED" \
               KEYCLOAK_CLIENT_SECRET="$ZARF_VAR_KEYCLOAK_CLIENT_SECRET" \
               bash create-credentials-secrets.sh
@@ -97,16 +123,35 @@ components:
             description: "Postgres Password"
             path: librechat-rag-api.rag.configEnv.POSTGRES_PASSWORD
           - name: KEYCLOAK_ENABLED
+            description: "Enable Keycloak SSO"
             path: keycloak.enabled
           - name: KEYCLOAK_ISSUER
+            description: "Keycloak OIDC issuer URL"
             path: keycloak.issuer
           - name: KEYCLOAK_CLIENT_ID
+            description: "Keycloak client ID"
             path: keycloak.clientId
           - name: KEYCLOAK_NODE_IP
+            description: "Keycloak node IP for hostAlias"
             path: keycloak.nodeIp
           - name: DOMAIN_CLIENT
+            description: "LibreChat client domain"
             path: librechat.configEnv.DOMAIN_CLIENT
           - name: DOMAIN_SERVER
+            description: "LibreChat server domain"
             path: librechat.configEnv.DOMAIN_SERVER
           - name: NODE_HOSTNAME
-            path: nodeSelector.kubernetes\.io/hostname
+            description: "Node hostname for scheduling"
+            path: scheduling.nodeHostname
+          - name: OLLAMA_BASE_URL
+            description: "Ollama embedding service URL"
+            path: librechat-rag-api.rag.configEnv.OLLAMA_BASE_URL
+          - name: EMBEDDINGS_MODEL
+            description: "Embeddings model name"
+            path: librechat-rag-api.rag.configEnv.EMBEDDINGS_MODEL
+          - name: RAG_CHUNK_SIZE
+            description: "Size of text chunks in characters"
+            path: librechat-rag-api.rag.configEnv.CHUNK_SIZE
+          - name: RAG_CHUNK_OVERLAP
+            description: "Overlap between chunks"
+            path: librechat-rag-api.rag.configEnv.CHUNK_OVERLAP

@@ -32,7 +32,7 @@ spec:
         app: librechat-postgresql
     spec:
       nodeSelector:
-        kubernetes.io/hostname: worker-1
+        kubernetes.io/hostname: "###ZARF_VAR_NODE_HOSTNAME###"
       containers:
         - name: postgresql
           image: pgvector/pgvector:pg16

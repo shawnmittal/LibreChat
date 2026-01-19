@@ -181,6 +181,7 @@ librechat-rag-api:
   nodeSelector:
     kubernetes.io/hostname: worker-1
   rag:
+    existingSecret: "librechat-credentials-env"
     configEnv:
       EMBEDDINGS_PROVIDER: "ollama"
       EMBEDDINGS_MODEL: "nomic-embed-text"
@@ -189,14 +190,17 @@ librechat-rag-api:
       DB_PORT: "5432"
       POSTGRES_DB: "librechat-vectordb"
       POSTGRES_USER: "postgres"
+      # RAG Chunking Configuration
+      CHUNK_SIZE: "1500"
+      CHUNK_OVERLAP: "100"
 
 
 image:
-  repository: danny-avila/librechat
+  repository: shawnmittal/librechat
   registry: ghcr.io
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "auth-testing"
 
 
 imagePullSecrets: []
@@ -329,6 +333,15 @@ affinity: {}
 #               values:
 #                 - worker-1
 
+# Scheduling configuration (used by Zarf)
+scheduling:
+  nodeHostname: ""
+#         - matchExpressions:
+#             - key: kubernetes.io/hostname
+#               operator: In
+#               values:
+#                 - worker-1
+
 # Host aliases for custom domain-to-IP mappings (adds entries to /etc/hosts)
 # Note: When keycloak.enabled is true and keycloak.nodeIp is set, keycloak.local will be added automatically
 hostAliases: []
@@ -381,6 +394,8 @@ mongodb:
   nodeSelector:
     kubernetes.io/hostname: worker-1
   image:
+    registry: docker.io
+    repository: bitnamilegacy/mongodb
     tag: "latest"
 #  persistence: 
 #    size: 8Gi

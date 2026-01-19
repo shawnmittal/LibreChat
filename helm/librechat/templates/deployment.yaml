@@ -151,9 +151,14 @@ spec:
             - key: ca-certificates.crt
               path: keycloak-ca.crt
       {{- end }}
-      {{- with .Values.nodeSelector }}
+      {{- if or .Values.nodeSelector .Values.scheduling.nodeHostname }}
       nodeSelector:
+        {{- if .Values.scheduling.nodeHostname }}
+        kubernetes.io/hostname: {{ .Values.scheduling.nodeHostname | quote }}
+        {{- end }}
+        {{- with .Values.nodeSelector }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- with .Values.affinity }}
       affinity:

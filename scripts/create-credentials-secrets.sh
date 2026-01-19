@@ -4,15 +4,12 @@
 # This function will run automatically when the script exits for ANY reason
 cleanup() {
   # Unset the sensitive credential variable immediately
-  unset OPENAI_KEY_VALUE
+  unset OPENAI_API_KEY
   unset KEYCLOAK_CLIENT_SECRET
 
   # Unset configuration variables
   unset TARGET_NAMESPACE
   unset TARGET_SECRET_NAME
-  unset SOURCE_SECRET_NAME
-  unset SOURCE_SECRET_NAMESPACE
-  unset SOURCE_SECRET_KEY
 
   echo "Environment variables cleared."
 }
@@ -24,25 +21,16 @@ trap cleanup EXIT
 TARGET_NAMESPACE="librechat"
 TARGET_SECRET_NAME="librechat-credentials-env"
 
-# EXISTING secret details
-SOURCE_SECRET_NAME="envoy-ai-gateway-goog-gemini-apikey"
-SOURCE_SECRET_NAMESPACE="production"
-SOURCE_SECRET_KEY="apiKey"
-
 # Keycloak settings (from environment or defaults)
 KEYCLOAK_ENABLED="${KEYCLOAK_ENABLED:-false}"
 KEYCLOAK_CLIENT_SECRET="${KEYCLOAK_CLIENT_SECRET:-}"
 
-# --- 3. Retrieve and Decode ---
-echo "Retrieving OpenAI API Key from ${SOURCE_SECRET_NAME}..."
+# OpenAI API Key (from environment)
+OPENAI_API_KEY="${OPENAI_API_KEY:-}"
 
-OPENAI_KEY_VALUE=$(kubectl get secret ${SOURCE_SECRET_NAME} \
-  -n ${SOURCE_SECRET_NAMESPACE} \
-  -o jsonpath="{.data.${SOURCE_SECRET_KEY}}" | base64 -d)
-
-# Validation: Ensure we actually got a key before proceeding
-if [ -z "$OPENAI_KEY_VALUE" ]; then
-  echo "Error: Could not retrieve API key. Check secret name and permissions."
+# --- 3. Validate API Key ---
+if [ -z "$OPENAI_API_KEY" ]; then
+  echo "Error: OPENAI_API_KEY not provided."
   exit 1
 fi
 
@@ -54,7 +42,7 @@ echo "Creating ${TARGET_SECRET_NAME} in namespace ${TARGET_NAMESPACE}..."
 
 # Build the secret command with base credentials
 SECRET_ARGS=(
-  "--from-literal=OPENAI_API_KEY=${OPENAI_KEY_VALUE}"
+  "--from-literal=OPENAI_API_KEY=${OPENAI_API_KEY}"
   "--from-literal=CREDS_KEY=$(openssl rand -hex 32)"
   "--from-literal=CREDS_IV=$(openssl rand -hex 16)"
   "--from-literal=JWT_SECRET=$(openssl rand -hex 32)"
@@ -85,7 +73,27 @@ echo "Creating librechat-vectordb in namespace ${TARGET_NAMESPACE}..."
 
 kubectl create secret generic "librechat-vectordb" \
   -n ${TARGET_NAMESPACE} \
-  --from-literal=POSTGRES_PASSWORD="$(openssl rand -hex 32)" \
+  --from-literal=postgres-password="$(openssl rand -hex 32)" \
   --dry-run=client -o yaml | kubectl apply -f -
+
+# --- 7. Create Keycloak CA Bundle ConfigMap (if Keycloak enabled) ---
+if [ "$KEYCLOAK_ENABLED" = "true" ]; then
+  echo "Creating keycloak-ca-bundle ConfigMap..."
+  
+  # Extract CA cert from Keycloak TLS secret
+  CA_CERT=$(kubectl get secret keycloak-tls-secret -n keycloak -o jsonpath='{.data.ca\.crt}' 2>/dev/null | base64 -d)
+  
+  if [ -n "$CA_CERT" ]; then
+    kubectl create configmap keycloak-ca-bundle \
+      -n ${TARGET_NAMESPACE} \
+      --from-literal=ca-certificates.crt="$CA_CERT" \
+      --dry-run=client -o yaml | kubectl apply -f -
+    echo "Keycloak CA bundle created successfully."
+  else
+    echo "Warning: Could not extract CA cert from keycloak-tls-secret. You may need to create keycloak-ca-bundle manually."
+  fi
+  
+  unset CA_CERT
+fi
 
 # The 'trap cleanup EXIT' will now trigger automatically
