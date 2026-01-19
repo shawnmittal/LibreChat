@@ -12,6 +12,17 @@ data:
   {{- if and (not (dig "configEnv" "MONGO_URI" "" .Values.librechat)) .Values.mongodb.enabled }}
   MONGO_URI: mongodb://{{ include "mongodb.service.nameOverride" .Subcharts.mongodb }}.{{ .Release.Namespace | lower }}.svc.cluster.local:27017/LibreChat
   {{- end }}
+  {{- if .Values.keycloak.enabled }}
+  # Keycloak SSO / OpenID Connect Configuration
+  ALLOW_SOCIAL_LOGIN: "true"
+  ALLOW_SOCIAL_REGISTRATION: "true"
+  OPENID_CLIENT_ID: {{ .Values.keycloak.clientId | quote }}
+  OPENID_ISSUER: {{ .Values.keycloak.issuer | quote }}
+  OPENID_CALLBACK_URL: "/oauth/openid/callback"
+  OPENID_SCOPE: "openid profile email"
+  OPENID_BUTTON_LABEL: "Login with Keycloak"
+  NODE_EXTRA_CA_CERTS: "/etc/ssl/certs/keycloak-ca.crt"
+  {{- end }}
   {{- if .Values.librechat.configEnv }}
   {{- toYaml .Values.librechat.configEnv | nindent 2 }}
   {{- end }}

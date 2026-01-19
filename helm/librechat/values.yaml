@@ -10,6 +10,14 @@ command:
 args:
   - "api/server/index.js"
 
+# Keycloak SSO Configuration (optional)
+# Set keycloak.enabled to true and provide other values to enable Keycloak authentication
+keycloak:
+  enabled: false
+  issuer: ""  # e.g., https://keycloak.local:30443/realms/librechat
+  clientId: "librechat"
+  nodeIp: ""  # IP address for hostAlias to reach Keycloak
+
 global:
    # default Secret for envs/ only Passwords. Can be locally generated with: kubectl create secret generic librechat-secret-envs --from-env-file=.env.example --dry-run=client -o yaml > secret-envs.yaml
    # For better maintainabillity, you can put all vars directly in the config Section and only overwrite Secrets with this if nessesary.
@@ -59,24 +67,6 @@ librechat:
     ENDPOINTS: "custom,agents"
     # Custom footer to hide the default "LibreChat - Every AI for Everyone" text
     CUSTOM_FOOTER: "LibreChat - Powered by Gemini"
-    
-    # ========================================
-    # Keycloak SSO / OpenID Connect Configuration
-    # ========================================
-    ALLOW_SOCIAL_LOGIN: "true"
-    ALLOW_SOCIAL_REGISTRATION: "true"
-    # Domain configuration for OIDC callbacks (must match browser URL)
-    DOMAIN_CLIENT: "http://chat.local:30080"
-    DOMAIN_SERVER: "http://chat.local:30080"
-    # OpenID Connect settings
-    OPENID_CLIENT_ID: "librechat"
-    # OPENID_CLIENT_SECRET is stored in the librechat-credentials-env secret
-    OPENID_ISSUER: "https://keycloak.local:30443/realms/librechat"
-    OPENID_CALLBACK_URL: "/oauth/openid/callback"
-    OPENID_SCOPE: "openid profile email"
-    OPENID_BUTTON_LABEL: "Login with Keycloak"
-    # Trust the Keycloak CA certificate
-    NODE_EXTRA_CA_CERTS: "/etc/ssl/certs/keycloak-ca.crt"
     # Set to development to allow non-HTTPS cookies (LibreChat is HTTP behind Tailscale)
     NODE_ENV: "development"
     
@@ -310,50 +300,38 @@ initContainers: {}
 #   # ... add more init containers as needed
 
 # Additional volumes on the output Deployment definition.
-# Mount Keycloak CA certificate for TLS trust
-volumes:
-  - name: keycloak-ca
-    configMap:
-      name: keycloak-ca-bundle
-      items:
-        - key: ca-certificates.crt
-          path: keycloak-ca.crt
+# Note: When keycloak.enabled is true, keycloak-ca volume will be added automatically
+volumes: []
 # - name: foo
 #   secret:
 #     secretName: mysecret
 #     optional: false
 
 # Additional volumeMounts on the output Deployment definition.
-volumeMounts:
-  - name: keycloak-ca
-    mountPath: "/etc/ssl/certs/keycloak-ca.crt"
-    subPath: keycloak-ca.crt
-    readOnly: true
+volumeMounts: []
 # - name: foo
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
-nodeSelector:
-  kubernetes.io/hostname: worker-1
+nodeSelector: {}
+#   kubernetes.io/hostname: worker-1
 
 tolerations: []
 
-affinity:
-  nodeAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: kubernetes.io/hostname
-              operator: In
-              values:
-                - worker-1
+affinity: {}
+# Example node affinity:
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#         - matchExpressions:
+#             - key: kubernetes.io/hostname
+#               operator: In
+#               values:
+#                 - worker-1
 
 # Host aliases for custom domain-to-IP mappings (adds entries to /etc/hosts)
-# Keycloak SSO: Map keycloak.local to the node IP to reach NodePort 30443
-hostAliases:
-  - ip: "192.168.8.163"
-    hostnames:
-      - "keycloak.local"
+# Note: When keycloak.enabled is true and keycloak.nodeIp is set, keycloak.local will be added automatically
+hostAliases: []
 # Example - Redirect AWS Bedrock to proxy:
 # hostAliases:
 #   - ip: "10.1.2.3"

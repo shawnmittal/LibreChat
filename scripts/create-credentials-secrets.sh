@@ -5,6 +5,7 @@
 cleanup() {
   # Unset the sensitive credential variable immediately
   unset OPENAI_KEY_VALUE
+  unset KEYCLOAK_CLIENT_SECRET
 
   # Unset configuration variables
   unset TARGET_NAMESPACE
@@ -28,6 +29,10 @@ SOURCE_SECRET_NAME="envoy-ai-gateway-goog-gemini-apikey"
 SOURCE_SECRET_NAMESPACE="production"
 SOURCE_SECRET_KEY="apiKey"
 
+# Keycloak settings (from environment or defaults)
+KEYCLOAK_ENABLED="${KEYCLOAK_ENABLED:-false}"
+KEYCLOAK_CLIENT_SECRET="${KEYCLOAK_CLIENT_SECRET:-}"
+
 # --- 3. Retrieve and Decode ---
 echo "Retrieving OpenAI API Key from ${SOURCE_SECRET_NAME}..."
 
@@ -47,14 +52,30 @@ kubectl create namespace ${TARGET_NAMESPACE} --dry-run=client -o yaml | kubectl 
 # --- 5. Create Combined Secret ---
 echo "Creating ${TARGET_SECRET_NAME} in namespace ${TARGET_NAMESPACE}..."
 
+# Build the secret command with base credentials
+SECRET_ARGS=(
+  "--from-literal=OPENAI_API_KEY=${OPENAI_KEY_VALUE}"
+  "--from-literal=CREDS_KEY=$(openssl rand -hex 32)"
+  "--from-literal=CREDS_IV=$(openssl rand -hex 16)"
+  "--from-literal=JWT_SECRET=$(openssl rand -hex 32)"
+  "--from-literal=JWT_REFRESH_SECRET=$(openssl rand -hex 32)"
+  "--from-literal=MEILI_MASTER_KEY=$(openssl rand -hex 32)"
+)
+
+# Add Keycloak secrets if enabled
+if [ "$KEYCLOAK_ENABLED" = "true" ]; then
+  echo "Keycloak SSO is enabled, adding OIDC secrets..."
+  if [ -z "$KEYCLOAK_CLIENT_SECRET" ]; then
+    echo "Warning: KEYCLOAK_CLIENT_SECRET not provided, generating random value"
+    KEYCLOAK_CLIENT_SECRET="$(openssl rand -hex 32)"
+  fi
+  SECRET_ARGS+=("--from-literal=OPENID_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}")
+  SECRET_ARGS+=("--from-literal=OPENID_SESSION_SECRET=$(openssl rand -hex 32)")
+fi
+
 kubectl create secret generic ${TARGET_SECRET_NAME} \
   -n ${TARGET_NAMESPACE} \
-  --from-literal=OPENAI_API_KEY="${OPENAI_KEY_VALUE}" \
-  --from-literal=CREDS_KEY="$(openssl rand -hex 32)" \
-  --from-literal=CREDS_IV="$(openssl rand -hex 16)" \
-  --from-literal=JWT_SECRET="$(openssl rand -hex 32)" \
-  --from-literal=JWT_REFRESH_SECRET="$(openssl rand -hex 32)" \
-  --from-literal=MEILI_MASTER_KEY="$(openssl rand -hex 32)" \
+  "${SECRET_ARGS[@]}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "Done! Secret '${TARGET_SECRET_NAME}' created successfully."

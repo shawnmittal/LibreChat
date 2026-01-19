@@ -13,6 +13,43 @@ variables:
     description: "Model name"
     default: "Gemini"
     prompt: true
+  
+  # Keycloak SSO Configuration (optional)
+  - name: KEYCLOAK_ENABLED
+    description: "Enable Keycloak SSO authentication"
+    default: "false"
+    prompt: true
+  - name: KEYCLOAK_ISSUER
+    description: "Keycloak OIDC issuer URL (e.g., https://keycloak.local:30443/realms/librechat)"
+    default: ""
+    prompt: false
+  - name: KEYCLOAK_CLIENT_ID
+    description: "Keycloak OIDC client ID"
+    default: "librechat"
+    prompt: false
+  - name: KEYCLOAK_CLIENT_SECRET
+    description: "Keycloak OIDC client secret"
+    default: ""
+    prompt: false
+    sensitive: true
+  - name: KEYCLOAK_NODE_IP
+    description: "IP address of the Keycloak node (for hostAlias)"
+    default: ""
+    prompt: false
+  - name: DOMAIN_CLIENT
+    description: "LibreChat client domain URL (e.g., http://chat.local:30080)"
+    default: "http://localhost:3080"
+    prompt: false
+  - name: DOMAIN_SERVER
+    description: "LibreChat server domain URL (e.g., http://chat.local:30080)"
+    default: "http://localhost:3080"
+    prompt: false
+  
+  # Node scheduling (optional)
+  - name: NODE_HOSTNAME
+    description: "Kubernetes node hostname to schedule LibreChat on (leave empty for any node)"
+    default: ""
+    prompt: false
 
 components:
   - name: librechat-credentials
@@ -24,13 +61,15 @@ components:
       onDeploy:
         after:
           - cmd: |
-              chmod 700 create-credentials-secret.sh
-              bash create-credentials-secret.sh
+              chmod 700 create-credentials-secrets.sh
+              KEYCLOAK_ENABLED="$ZARF_VAR_KEYCLOAK_ENABLED" \
+              KEYCLOAK_CLIENT_SECRET="$ZARF_VAR_KEYCLOAK_CLIENT_SECRET" \
+              bash create-credentials-secrets.sh
 
   - name: librechat-images
     required: true
     images:
-      - "ghcr.io/shawnmittal/librechat:security-banner"
+      - "ghcr.io/shawnmittal/librechat:auth-testing"
       - "pgvector/pgvector:pg16"
       - "ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest"
       - "docker.io/bitnamilegacy/mongodb:latest"
@@ -50,10 +89,24 @@ components:
       - name: librechat
         localPath: ./helm/librechat
         namespace: librechat
-        version: "0.1.0" # Version isn't strictly checked for local charts in some Zarf versions, but good to have.
+        version: "0.1.0"
         valuesFiles:
           - ./helm/librechat/values.yaml
         variables:
           - name: POSTGRES_PASSWORD
             description: "Postgres Password"
             path: librechat-rag-api.rag.configEnv.POSTGRES_PASSWORD
+          - name: KEYCLOAK_ENABLED
+            path: keycloak.enabled
+          - name: KEYCLOAK_ISSUER
+            path: keycloak.issuer
+          - name: KEYCLOAK_CLIENT_ID
+            path: keycloak.clientId
+          - name: KEYCLOAK_NODE_IP
+            path: keycloak.nodeIp
+          - name: DOMAIN_CLIENT
+            path: librechat.configEnv.DOMAIN_CLIENT
+          - name: DOMAIN_SERVER
+            path: librechat.configEnv.DOMAIN_SERVER
+          - name: NODE_HOSTNAME
+            path: nodeSelector.kubernetes\.io/hostname
