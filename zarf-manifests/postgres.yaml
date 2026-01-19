@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: librechat-postgresql-pvc
+  namespace: librechat
+  labels:
+    app: librechat-postgresql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: librechat-postgresql
+  namespace: librechat
+  labels:
+    app: librechat-postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: librechat-postgresql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: librechat-postgresql
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: worker-1
+      containers:
+        - name: postgresql
+          image: pgvector/pgvector:pg16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "librechat-vectordb"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: librechat-vectordb
+                  key: postgres-password
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+                - -d
+                - librechat-vectordb
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+                - -d
+                - librechat-vectordb
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: postgresql-data
+          persistentVolumeClaim:
+            claimName: librechat-postgresql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: librechat-postgresql
+  namespace: librechat
+  labels:
+    app: librechat-postgresql
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: postgresql
+  selector:
+    app: librechat-postgresql
